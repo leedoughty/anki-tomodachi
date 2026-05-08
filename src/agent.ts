@@ -1,10 +1,15 @@
 import { ChatAnthropic } from "@langchain/anthropic";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { MemorySaver } from "@langchain/langgraph";
 import { HumanMessage } from "@langchain/core/messages";
 import { searchCardsTool } from "./tools.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
 
-export function createAgent() {
+export interface AgentOptions {
+  checkpointSaver?: MemorySaver;
+}
+
+export function createAgent(options?: AgentOptions) {
   const model = new ChatAnthropic({
     model: "claude-sonnet-4-6",
     temperature: 0,
@@ -14,6 +19,9 @@ export function createAgent() {
     llm: model,
     tools: [searchCardsTool],
     messageModifier: SYSTEM_PROMPT,
+    ...(options?.checkpointSaver
+      ? { checkpointSaver: options.checkpointSaver }
+      : {}),
   });
 }
 
