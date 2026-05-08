@@ -1,0 +1,122 @@
+{
+  "notes": [
+    {
+      "noteId": 1000,
+      "modelName": "Basic",
+      "tags": ["jlpt::n3", "vocabulary"],
+      "fields": {
+        "Front": { "value": "食べる", "order": 0 },
+        "Back": { "value": "to eat", "order": 1 }
+      },
+      "cards": [2000]
+    },
+    {
+      "noteId": 1001,
+      "modelName": "Japanese (Recognition & Recall)",
+      "tags": ["jlpt::n2", "vocabulary"],
+      "fields": {
+        "Expression": { "value": "<b>突破</b>", "order": 0 },
+        "Reading": { "value": "とっぱ", "order": 1 },
+        "Meaning": { "value": "breakthrough; breaking through", "order": 2 },
+        "Example": { "value": "記録を<b>突破</b>する", "order": 3 }
+      },
+      "cards": [2001, 2002]
+    },
+    {
+      "noteId": 1002,
+      "modelName": "Basic",
+      "tags": ["grammar", "jlpt::n2"],
+      "fields": {
+        "Front": { "value": "<div class=\"expression\">〜ざるを得ない</div>", "order": 0 },
+        "Back": { "value": "can't help but ~; have no choice but to ~", "order": 1 }
+      },
+      "cards": [2003]
+    },
+    {
+      "noteId": 1003,
+      "modelName": "Kanji",
+      "tags": ["kanji", "jlpt::n1"],
+      "fields": {
+        "Kanji": { "value": "翔", "order": 0 },
+        "Meaning": { "value": "soar; fly high", "order": 1 },
+        "Onyomi": { "value": "ショウ", "order": 2 },
+        "Kunyomi": { "value": "", "order": 3 }
+      },
+      "cards": [2004]
+    },
+    {
+      "noteId": 1004,
+      "modelName": "Sentence",
+      "tags": ["sentence", "jlpt::n2"],
+      "fields": {
+        "Japanese": { "value": "彼は<ruby>約束<rt>やくそく</rt></ruby>を守る人だ。", "order": 0 },
+        "English": { "value": "He is a person who keeps his promises.", "order": 1 }
+      },
+      "cards": [2005]
+    },
+    {
+      "noteId": 1005,
+      "modelName": "Basic",
+      "tags": ["vocabulary"],
+      "fields": {
+        "Front": { "value": "🍎 りんご", "order": 0 },
+        "Back": { "value": "apple 🍏", "order": 1 }
+      },
+      "cards": [2006]
+    },
+    {
+      "noteId": 1006,
+      "modelName": "Basic (and reversed card)",
+      "tags": ["jlpt::n3", "単語"],
+      "fields": {
+        "Front": { "value": "走る", "order": 0 },
+        "Back": { "value": "to run; はしる", "order": 1 }
+      },
+      "cards": [2007, 2008]
+    },
+    {
+      "noteId": 1007,
+      "modelName": "Basic",
+      "tags": [],
+      "fields": {
+        "Front": { "value": "", "order": 0 },
+        "Back": { "value": "", "order": 1 }
+      },
+      "cards": [2009]
+    },
+    {
+      "noteId": 1008,
+      "modelName": "Cloze",
+      "tags": ["文法", "jlpt::n1"],
+      "fields": {
+        "Text": { "value": "{{c1::にもかかわらず}}、彼は来なかった。", "order": 0 },
+        "Extra": { "value": "despite; in spite of", "order": 1 }
+      },
+      "cards": [2010]
+    },
+    {
+      "noteId": 1009,
+      "modelName": "Basic",
+      "tags": ["jlpt::n2", "vocabulary"],
+      "fields": {
+        "Front": { "value": "<span style=\"color:red\">挑戦</span>", "order": 0 },
+        "Back": { "value": "<i>ちょうせん</i><br>challenge; attempt", "order": 1 }
+      },
+      "cards": [2011]
+    }
+  ],
+  "cards": [
+    { "cardId": 2000, "note": 1000, "deckName": "Japanese::Vocabulary", "interval": 180, "factor": 2500, "lapses": 0, "due": 1700000000, "queue": 2 },
+    { "cardId": 2001, "note": 1001, "deckName": "Japanese::Vocabulary", "interval": 45, "factor": 2100, "lapses": 3, "due": 1699000000, "queue": 2 },
+    { "cardId": 2002, "note": 1001, "deckName": "Japanese::Vocabulary", "interval": 12, "factor": 1800, "lapses": 5, "due": 1698500000, "queue": 2 },
+    { "cardId": 2003, "note": 1002, "deckName": "Japanese::Grammar", "interval": 90, "factor": 2300, "lapses": 1, "due": 1699500000, "queue": 2 },
+    { "cardId": 2004, "note": 1003, "deckName": "Japanese::Kanji", "interval": 7, "factor": 1500, "lapses": 8, "due": 1698000000, "queue": 2 },
+    { "cardId": 2005, "note": 1004, "deckName": "Japanese::Sentences", "interval": 60, "factor": 2200, "lapses": 2, "due": 1699200000, "queue": 2 },
+    { "cardId": 2006, "note": 1005, "deckName": "Japanese::Vocabulary", "interval": 365, "factor": 2800, "lapses": 0, "due": 1701000000, "queue": 2 },
+    { "cardId": 2007, "note": 1006, "deckName": "Japanese::Vocabulary", "interval": 120, "factor": 2600, "lapses": 0, "due": 1700500000, "queue": 2 },
+    { "cardId": 2008, "note": 1006, "deckName": "Japanese::Vocabulary", "interval": 30, "factor": 2000, "lapses": 2, "due": 1699100000, "queue": 2 },
+    { "cardId": 2009, "note": 1007, "deckName": "Default", "interval": 0, "factor": 0, "lapses": 0, "due": 0, "queue": 0 },
+    { "cardId": 2010, "note": 1008, "deckName": "Japanese::Grammar", "interval": 15, "factor": 1900, "lapses": 4, "due": 1698800000, "queue": 2 },
+    { "cardId": 2011, "note": 1009, "deckName": "Japanese::Vocabulary", "interval": 30, "factor": 2100, "lapses": 1, "due": 1699300000, "queue": 2 }
+  ]
+}

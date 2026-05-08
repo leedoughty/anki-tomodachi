@@ -1,0 +1,24 @@
+{
+  "name": "anki-tomodachi",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "chat": "tsx src/cli.ts",
+    "ingest": "tsx scripts/ingest.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "chromadb": "^1.9.2",
+    "chromadb-default-embed": "^2.14.0",
+    "ora": "^8.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
