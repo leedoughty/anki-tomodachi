@@ -1,4 +1,4 @@
-import { ChromaClient, type Collection } from "chromadb";
+import { ChromaClient, IncludeEnum, type Collection } from "chromadb";
 import type { CardDocument, CardMetadata, SearchResult } from "./types.js";
 
 const CHROMA_URL = "http://localhost:8000";
@@ -92,6 +92,29 @@ export async function searchCards(
     text: documents[i] ?? "",
     metadata: (metadatas[i] ?? {}) as unknown as CardMetadata,
     distance: distances[i] ?? 0,
+  }));
+}
+
+export interface StoredCard {
+  id: string;
+  text: string;
+  metadata: CardMetadata;
+}
+
+export async function getAllCards(): Promise<StoredCard[]> {
+  const collection = await getOrCreateCollection();
+  const count = await collection.count();
+  if (count === 0) return [];
+
+  const results = await collection.get({
+    include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+    limit: count,
+  });
+
+  return results.ids.map((id, i) => ({
+    id: id ?? "",
+    text: (results.documents?.[i] ?? "") as string,
+    metadata: (results.metadatas?.[i] ?? {}) as unknown as CardMetadata,
   }));
 }
 

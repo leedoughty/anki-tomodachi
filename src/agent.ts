@@ -2,7 +2,12 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
 import { HumanMessage } from "@langchain/core/messages";
-import { searchCardsTool } from "./tools.js";
+import {
+  searchCardsTool,
+  findGapsTool,
+  cardStatsTool,
+  analyseTextTool,
+} from "./tools.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
 
 export interface AgentOptions {
@@ -17,7 +22,7 @@ export function createAgent(options?: AgentOptions) {
 
   return createReactAgent({
     llm: model,
-    tools: [searchCardsTool],
+    tools: [searchCardsTool, findGapsTool, cardStatsTool, analyseTextTool],
     messageModifier: SYSTEM_PROMPT,
     ...(options?.checkpointSaver
       ? { checkpointSaver: options.checkpointSaver }
