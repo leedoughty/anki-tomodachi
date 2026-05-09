@@ -1,8 +1,10 @@
 import { ChromaClient, IncludeEnum, type Collection } from "chromadb";
 import type { CardDocument, CardMetadata, SearchResult } from "./types.js";
+import { MultilingualEmbeddingFunction } from "./embeddings.js";
 
 const CHROMA_URL = "http://localhost:8000";
-const COLLECTION_NAME = "cards_semantic";
+const COLLECTION_NAME = "cards_multilingual";
+const embeddingFunction = new MultilingualEmbeddingFunction();
 const BATCH_SIZE = 200;
 
 let clientInstance: ChromaClient | null = null;
@@ -18,7 +20,7 @@ export async function getOrCreateCollection(
   client?: ChromaClient,
 ): Promise<Collection> {
   const c = client ?? getChromaClient();
-  return c.getOrCreateCollection({ name: COLLECTION_NAME });
+  return c.getOrCreateCollection({ name: COLLECTION_NAME, embeddingFunction });
 }
 
 export async function addDocuments(
