@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "chat": "tsx src/cli.ts",
-    "ingest": "tsx scripts/ingest.ts",
+    "chat": "bash scripts/start-chroma.sh && tsx src/cli.ts",
+    "db": "bash scripts/start-chroma.sh",
+    "ingest": "bash scripts/start-chroma.sh && tsx scripts/ingest.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

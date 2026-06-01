@@ -14,18 +14,25 @@ A RAG-powered Japanese study assistant that turns your Anki deck into a queryabl
 
 - **Node.js** 20+
 - **Anki** desktop with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) plugin installed
-- **ChromaDB** server running locally
+- **ChromaDB** installed locally (the `chroma` CLI)
 - **Anthropic API key**
 
-### Starting ChromaDB
+### Installing ChromaDB
+
+You don't need to start ChromaDB yourself — `npm run chat` and `npm run ingest`
+launch it automatically (see [ChromaDB auto-start](#chromadb-auto-start) below).
+You just need the `chroma` CLI installed:
 
 ```bash
 # via pipx (recommended on macOS)
 brew install pipx
 pipx install chromadb
-chroma run --path ./chroma_data
+```
 
-# or via Docker
+If you'd rather run ChromaDB in Docker instead of natively, start it manually in
+its own terminal and the auto-start step will detect and reuse it:
+
+```bash
 docker run -p 8000:8000 chromadb/chroma
 ```
 
@@ -91,6 +98,26 @@ npm run ingest
 
 Pulls all cards from Anki via AnkiConnect, strips HTML, extracts metadata (ease, interval, lapses), and embeds them into ChromaDB. Run this once initially, then again whenever you want to sync changes from Anki.
 
+### ChromaDB auto-start
+
+Both `npm run chat` and `npm run ingest` run `scripts/start-chroma.sh` first,
+which ensures a local ChromaDB server is up on `localhost:8000`:
+
+- If a server is **already running**, it's detected and reused (no duplicate is started).
+- Otherwise `chroma run --path ./chroma_data` is launched in the background,
+  logging to `chroma.log`, and the script waits until it's ready before continuing.
+
+The server **stays running** after you exit chat so the next command reuses it
+instantly. Your data persists to `./chroma_data` regardless, and the server binds
+to `localhost` only. It does not survive a reboot — the next `npm run chat` simply
+starts it again.
+
+```bash
+npm run db   # start ChromaDB on its own, without launching chat
+
+pkill -f "chroma run"   # stop it manually if you want the port/RAM back
+```
+
 ## Architecture
 
 ```mermaid
@@ -130,6 +157,7 @@ src/
   cli.ts            # Interactive REPL with streaming
 scripts/
   ingest.ts         # CLI entry point for ingestion
+  start-chroma.sh   # Idempotently starts/reuses the local ChromaDB server
 data/
   n1_grammar.json   # N1 grammar reference list for gap analysis
 ```
