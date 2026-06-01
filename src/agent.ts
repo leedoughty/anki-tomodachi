@@ -1,4 +1,3 @@
-import { ChatAnthropic } from "@langchain/anthropic";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
 import { HumanMessage } from "@langchain/core/messages";
@@ -9,16 +8,15 @@ import {
   analyseTextTool,
 } from "./tools.js";
 import { SYSTEM_PROMPT } from "./prompts.js";
+import { createModel, defaultModelConfig, type ModelConfig } from "./model.js";
 
 export interface AgentOptions {
   checkpointSaver?: MemorySaver;
+  model?: ModelConfig;
 }
 
 export function createAgent(options?: AgentOptions) {
-  const model = new ChatAnthropic({
-    model: "claude-sonnet-4-6",
-    temperature: 0,
-  });
+  const model = createModel(options?.model ?? defaultModelConfig());
 
   return createReactAgent({
     llm: model,

@@ -7,6 +7,60 @@ import { MemorySaver } from "@langchain/langgraph";
 import { createAgent } from "./agent.js";
 import { getCollectionStats } from "./vectorstore.js";
 import { ingestCards } from "./ingest.js";
+import {
+  defaultModelConfig,
+  describeModel,
+  fetchOllamaModels,
+  parseModelSpec,
+  type ModelConfig,
+} from "./model.js";
+
+async function selectModel(): Promise<ModelConfig> {
+  const current = defaultModelConfig();
+  if (!process.stdin.isTTY) return current;
+
+  const options: ModelConfig[] = [current];
+  for (const name of await fetchOllamaModels()) {
+    if (current.provider === "ollama" && current.name === name) continue;
+    options.push({ provider: "ollama", name });
+  }
+
+  console.log(chalk.dim("\n  Select model:"));
+  options.forEach((opt, i) => {
+    const marker = i === 0 ? chalk.dim(" (default)") : "";
+    console.log(`    ${i + 1}. ${describeModel(opt)}${marker}`);
+  });
+  console.log(
+    chalk.dim("    or type a custom spec, e.g. openai/gpt-4o, ollama/llama3.1"),
+  );
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await new Promise<string>((resolve) =>
+    rl.question(chalk.cyan("\n  model [1] > "), (a) => resolve(a.trim())),
+  );
+  rl.close();
+
+  if (!answer) return current;
+
+  const num = Number(answer);
+  if (Number.isInteger(num) && num >= 1 && num <= options.length) {
+    return options[num - 1] ?? current;
+  }
+
+  try {
+    return parseModelSpec(answer);
+  } catch (error) {
+    console.log(
+      chalk.yellow(
+        `  ${error instanceof Error ? error.message : "Invalid choice."} Using default.`,
+      ),
+    );
+    return current;
+  }
+}
 
 async function handleSlashCommand(command: string): Promise<boolean> {
   switch (command) {
@@ -67,11 +121,14 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const model = await selectModel();
+
   console.log(chalk.bold("\n友達 — anki-tomodachi"));
   console.log(chalk.dim(`${cardCount.toLocaleString()} cards loaded`));
+  console.log(chalk.dim(`model: ${describeModel(model)}`));
   console.log(chalk.dim("Type /help for commands\n"));
 
-  const agent = createAgent({ checkpointSaver: new MemorySaver() });
+  const agent = createAgent({ checkpointSaver: new MemorySaver(), model });
   const config = { configurable: { thread_id: "chat" } };
 
   const rl = readline.createInterface({

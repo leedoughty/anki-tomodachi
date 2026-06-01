@@ -15,7 +15,8 @@ A RAG-powered Japanese study assistant that turns your Anki deck into a queryabl
 - **Node.js** 20+
 - **Anki** desktop with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) plugin installed
 - **ChromaDB** installed locally (the `chroma` CLI)
-- **Anthropic API key**
+- **An LLM** — either an **Anthropic API key** (default) or a local
+  [Ollama](https://ollama.com) install (see [Choosing a model](#choosing-a-model))
 
 ### Installing ChromaDB
 
@@ -81,6 +82,34 @@ Opens an interactive REPL. Ask questions in Japanese or English — the agent se
 
 Tool calls are shown dimmed so you can see what's being retrieved. Conversation context is maintained across turns.
 
+### Choosing a model
+
+anki-tomodachi can run on cloud or local LLMs. At chat startup you get a picker
+listing the default model plus any models installed in a local
+[Ollama](https://ollama.com), or you can type a custom `provider/name` spec.
+Supported providers:
+
+| Provider    | Example spec                  | Notes                                              |
+| ----------- | ----------------------------- | -------------------------------------------------- |
+| `anthropic` | `anthropic/claude-sonnet-4-6` | Default. Needs `ANTHROPIC_API_KEY`.                |
+| `ollama`    | `ollama/qwen3:8b`             | Fully local, no API key. Needs Ollama running.      |
+| `openai`    | `openai/gpt-4o`              | Needs `OPENAI_API_KEY` (or set `base_url` for any OpenAI-compatible endpoint). |
+
+Set a default without the picker via `TOMODACHI_MODEL` in `.env`:
+
+```bash
+TOMODACHI_MODEL=ollama/qwen3:8b
+```
+
+With a local model and the built-in local embeddings (multilingual-e5-small),
+the whole assistant runs **offline**.
+
+> **Tool calling required.** The agent works by calling tools (`search_cards`,
+> etc.), so a local model must support tool/function calling. `qwen3` and
+> `qwen2.5` work well; some models (e.g. `llama3.1`) tend to loop and hit the
+> agent's recursion limit. If answers come back without any `→ search_cards(...)`
+> lines, the model likely can't call tools — switch to a qwen-family model.
+
 ### Slash commands
 
 | Command   | Description               |
@@ -123,7 +152,7 @@ pkill -f "chroma run"   # stop it manually if you want the port/RAM back
 ```mermaid
 flowchart LR
     CLI[Terminal REPL] --> Agent[LangGraph Agent]
-    Agent --> LLM[Claude Sonnet]
+    Agent --> LLM[LLM: Claude / Ollama / OpenAI]
     Agent --> search[search_cards]
     Agent --> gaps[find_gaps]
     Agent --> stats[card_stats]
@@ -137,11 +166,12 @@ flowchart LR
 - **ChromaDB** stores card embeddings with metadata (deck, tags, ease, interval, lapses, card type)
 - **AnkiConnect** pulls cards from your running Anki instance (only needed during ingestion)
 - **LangGraph** orchestrates a ReAct agent that picks the right tool for each question
-- **Claude Sonnet** reasons about your cards and generates personalised answers
+- **The LLM** (Anthropic Claude, a local Ollama model, or any OpenAI-compatible
+  endpoint) reasons about your cards and generates personalised answers
 
 ## Tech stack
 
-TypeScript, Node.js (ESM), LangGraph.js, LangChain.js, ChromaDB, Anthropic Claude, Zod, Vitest
+TypeScript, Node.js (ESM), LangGraph.js, LangChain.js, ChromaDB, Anthropic Claude / Ollama / OpenAI, Zod, Vitest
 
 ## Project structure
 
@@ -152,9 +182,10 @@ src/
   vectorstore.ts    # ChromaDB client, search, bulk retrieval
   ingest.ts         # Card ingestion pipeline
   tools.ts          # LangGraph tool definitions (search, gaps, stats, analyse)
+  model.ts          # LLM factory + model selection (Anthropic / Ollama / OpenAI)
   agent.ts          # LangGraph ReAct agent setup
   prompts.ts        # System prompt
-  cli.ts            # Interactive REPL with streaming
+  cli.ts            # Interactive REPL with streaming + model picker
 scripts/
   ingest.ts         # CLI entry point for ingestion
   start-chroma.sh   # Idempotently starts/reuses the local ChromaDB server
