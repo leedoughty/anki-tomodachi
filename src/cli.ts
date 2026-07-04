@@ -5,7 +5,8 @@ import ora from "ora";
 import { HumanMessage } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { createAgent } from "./agent.js";
-import { getCollectionStats } from "./vectorstore.js";
+import { printBanner } from "./banner.js";
+import { getCollectionStats, getDeckStats } from "./vectorstore.js";
 import { ingestCards } from "./ingest.js";
 import {
   ANTHROPIC_MODELS,
@@ -129,10 +130,14 @@ async function main(): Promise<void> {
 
   const model = await selectModel();
 
-  console.log(chalk.bold("\n友達 — anki-tomodachi"));
-  console.log(chalk.dim(`${cardCount.toLocaleString()} cards loaded`));
-  console.log(chalk.dim(`model: ${describeModel(model)}`));
-  console.log(chalk.dim("Type /help for commands\n"));
+  let decks: Awaited<ReturnType<typeof getDeckStats>> = [];
+  try {
+    decks = await getDeckStats();
+  } catch {
+    // banner still renders without deck breakdown
+  }
+
+  printBanner({ cardCount, decks, model });
 
   const agent = createAgent({ checkpointSaver: new MemorySaver(), model });
   const config = { configurable: { thread_id: "chat" } };

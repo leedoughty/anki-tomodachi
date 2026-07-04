@@ -127,3 +127,33 @@ export async function getCollectionStats(
   const count = await col.count();
   return { count };
 }
+
+export interface DeckStat {
+  deck: string;
+  count: number;
+}
+
+export async function getDeckStats(
+  collection?: Collection,
+): Promise<DeckStat[]> {
+  const col = collection ?? (await getOrCreateCollection());
+  const count = await col.count();
+  if (count === 0) return [];
+
+  const results = await col.get({
+    include: [IncludeEnum.Metadatas],
+    limit: count,
+  });
+
+  const counts = new Map<string, number>();
+  for (const metadata of results.metadatas ?? []) {
+    const deck = String(
+      (metadata as Record<string, unknown> | null)?.deck ?? "(no deck)",
+    );
+    counts.set(deck, (counts.get(deck) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([deck, n]) => ({ deck, count: n }))
+    .sort((a, b) => b.count - a.count);
+}
