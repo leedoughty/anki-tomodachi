@@ -85,15 +85,16 @@ Tool calls are shown dimmed so you can see what's being retrieved. Conversation 
 ### Choosing a model
 
 anki-tomodachi can run on cloud or local LLMs. At chat startup you get a picker
-listing the default model plus any models installed in a local
-[Ollama](https://ollama.com), or you can type a custom `provider/name` spec.
-Supported providers:
+listing the current Claude models (Fable 5, Opus 4.8, Sonnet 5, Sonnet 4.6,
+Haiku 4.5) plus any models installed in a local [Ollama](https://ollama.com) —
+pick a number or hit enter for the default. You can also type a custom
+`provider/name` spec. Supported providers:
 
-| Provider    | Example spec                  | Notes                                              |
-| ----------- | ----------------------------- | -------------------------------------------------- |
-| `anthropic` | `anthropic/claude-sonnet-4-6` | Default. Needs `ANTHROPIC_API_KEY`.                |
-| `ollama`    | `ollama/qwen3:8b`             | Fully local, no API key. Needs Ollama running.      |
-| `openai`    | `openai/gpt-4o`              | Needs `OPENAI_API_KEY` (or set `base_url` for any OpenAI-compatible endpoint). |
+| Provider    | Example spec                | Notes                                                                          |
+| ----------- | --------------------------- | ------------------------------------------------------------------------------ |
+| `anthropic` | `anthropic/claude-sonnet-5` | Default. Needs `ANTHROPIC_API_KEY`.                                            |
+| `ollama`    | `ollama/qwen3:8b`           | Fully local, no API key. Needs Ollama running.                                 |
+| `openai`    | `openai/gpt-4o`             | Needs `OPENAI_API_KEY` (or set `base_url` for any OpenAI-compatible endpoint). |
 
 Set a default without the picker via `TOMODACHI_MODEL` in `.env`:
 

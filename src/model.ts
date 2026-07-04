@@ -14,8 +14,16 @@ export interface ModelConfig {
 
 const DEFAULT_MODEL: ModelConfig = {
   provider: "anthropic",
-  name: "claude-sonnet-4-6",
+  name: "claude-sonnet-5",
 };
+
+export const ANTHROPIC_MODELS: ModelConfig[] = [
+  { provider: "anthropic", name: "claude-fable-5" },
+  { provider: "anthropic", name: "claude-opus-4-8" },
+  { provider: "anthropic", name: "claude-sonnet-5" },
+  { provider: "anthropic", name: "claude-sonnet-4-6" },
+  { provider: "anthropic", name: "claude-haiku-4-5" },
+];
 
 const OLLAMA_DEFAULT_URL = "http://localhost:11434";
 const PROVIDERS: Provider[] = ["anthropic", "ollama", "openai"];
@@ -51,9 +59,12 @@ export function defaultModelConfig(): ModelConfig {
 export function createModel(config: ModelConfig): BaseChatModel {
   switch (config.provider) {
     case "anthropic":
+      // Claude 4.7+ rejects sampling params; Fable requires thinking on.
       return new ChatAnthropic({
         model: config.name,
-        temperature: 0,
+        ...(/^claude-(fable|mythos)/.test(config.name)
+          ? { thinking: { type: "adaptive" } }
+          : {}),
         ...(config.apiKeyEnv ? { apiKey: process.env[config.apiKeyEnv] } : {}),
       });
 

@@ -8,6 +8,7 @@ import { createAgent } from "./agent.js";
 import { getCollectionStats } from "./vectorstore.js";
 import { ingestCards } from "./ingest.js";
 import {
+  ANTHROPIC_MODELS,
   defaultModelConfig,
   describeModel,
   fetchOllamaModels,
@@ -20,6 +21,11 @@ async function selectModel(): Promise<ModelConfig> {
   if (!process.stdin.isTTY) return current;
 
   const options: ModelConfig[] = [current];
+  for (const model of ANTHROPIC_MODELS) {
+    if (current.provider === "anthropic" && current.name === model.name)
+      continue;
+    options.push(model);
+  }
   for (const name of await fetchOllamaModels()) {
     if (current.provider === "ollama" && current.name === name) continue;
     options.push({ provider: "ollama", name });
