@@ -4,8 +4,9 @@
 set -euo pipefail
 
 HEARTBEAT="http://localhost:8000/api/v2/heartbeat"
-DATA_PATH="./chroma_data"
-LOG_FILE="./chroma.log"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DATA_PATH="$ROOT/chroma_data"
+LOG_FILE="$ROOT/chroma.log"
 
 is_up() {
   [ "$(curl -s -o /dev/null -w '%{http_code}' "$HEARTBEAT")" = "200" ]

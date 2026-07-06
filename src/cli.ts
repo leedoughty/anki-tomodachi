@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 import * as readline from "readline";
 import chalk from "chalk";
 import ora from "ora";
@@ -16,6 +17,12 @@ import {
   parseModelSpec,
   type ModelConfig,
 } from "./model.js";
+
+// Load the repo-root .env regardless of the caller's working directory.
+dotenv.config({
+  path: fileURLToPath(new URL("../.env", import.meta.url)),
+  quiet: true,
+});
 
 async function selectModel(): Promise<ModelConfig> {
   const current = defaultModelConfig();

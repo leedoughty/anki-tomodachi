@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Global launcher: run the anki-tomodachi REPL from any directory.
+# Installed via `npm link` (see README "Run from anywhere").
+set -euo pipefail
+
+# Resolve the real repo root, following the npm-link symlink chain.
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+ROOT="$(cd "$(dirname "$SELF")/.." && pwd)"
+
+"$ROOT/scripts/start-chroma.sh"
+
+case "${1:-}" in
+  ingest)
+    shift
+    exec "$ROOT/node_modules/.bin/tsx" "$ROOT/scripts/ingest.ts" "$@"
+    ;;
+  db)
+    exit 0
+    ;;
+  *)
+    exec "$ROOT/node_modules/.bin/tsx" "$ROOT/src/cli.ts" "$@"
+    ;;
+esac

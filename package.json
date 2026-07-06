@@ -2,6 +2,9 @@
   "name": "anki-tomodachi",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "anki-tomodachi": "bin/anki-tomodachi"
+  },
   "scripts": {
     "chat": "bash scripts/start-chroma.sh && tsx src/cli.ts",
     "db": "bash scripts/start-chroma.sh",

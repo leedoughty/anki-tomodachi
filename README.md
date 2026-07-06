@@ -82,6 +82,29 @@ Opens an interactive REPL. Ask questions in Japanese or English — the agent se
 
 Tool calls are shown dimmed so you can see what's being retrieved. Conversation context is maintained across turns.
 
+### Run from anywhere
+
+Install the global `anki-tomodachi` command once:
+
+```bash
+npm link   # from the repo root
+```
+
+Then from any directory:
+
+```bash
+anki-tomodachi          # start chatting (same as npm run chat)
+anki-tomodachi ingest   # re-sync cards from Anki (same as npm run ingest)
+anki-tomodachi db       # just start ChromaDB (same as npm run db)
+```
+
+ChromaDB data, logs, and your `.env` are always resolved against the repo, no
+matter where you invoke it from.
+
+> **nvm note:** `npm link` installs into the active Node version's bin
+> directory. If you switch Node versions with nvm, re-run `npm link` under the
+> new version.
+
 ### Choosing a model
 
 anki-tomodachi can run on cloud or local LLMs. At chat startup you get a picker
@@ -134,13 +157,14 @@ Both `npm run chat` and `npm run ingest` run `scripts/start-chroma.sh` first,
 which ensures a local ChromaDB server is up on `localhost:8000`:
 
 - If a server is **already running**, it's detected and reused (no duplicate is started).
-- Otherwise `chroma run --path ./chroma_data` is launched in the background,
-  logging to `chroma.log`, and the script waits until it's ready before continuing.
+- Otherwise `chroma run --path <repo>/chroma_data` is launched in the background,
+  logging to the repo's `chroma.log`, and the script waits until it's ready before
+  continuing.
 
 The server **stays running** after you exit chat so the next command reuses it
-instantly. Your data persists to `./chroma_data` regardless, and the server binds
-to `localhost` only. It does not survive a reboot — the next `npm run chat` simply
-starts it again.
+instantly. Your data persists to the repo's `chroma_data/` regardless of where you
+invoke it from, and the server binds to `localhost` only. It does not survive a
+reboot — the next `npm run chat` simply starts it again.
 
 ```bash
 npm run db   # start ChromaDB on its own, without launching chat
@@ -190,6 +214,8 @@ src/
 scripts/
   ingest.ts         # CLI entry point for ingestion
   start-chroma.sh   # Idempotently starts/reuses the local ChromaDB server
+bin/
+  anki-tomodachi    # Global launcher (installed via npm link)
 data/
   n1_grammar.json   # N1 grammar reference list for gap analysis
 ```
