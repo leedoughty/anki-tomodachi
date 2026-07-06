@@ -141,7 +141,7 @@ the whole assistant runs **offline**.
 | `/stats`  | Show deck card count      |
 | `/ingest` | Re-import cards from Anki |
 | `/help`   | List commands             |
-| `/quit`   | Exit                      |
+| `/quit`   | Exit (alias `/exit`)      |
 
 ### Ingestion
 
@@ -207,11 +207,13 @@ src/
   anki-connect.ts   # Typed AnkiConnect HTTP client
   types.ts          # Zod schemas for cards, metadata, search results
   vectorstore.ts    # ChromaDB client, search, bulk retrieval
+  embeddings.ts     # Local multilingual-e5-small embedding function
   ingest.ts         # Card ingestion pipeline
   tools.ts          # LangGraph tool definitions (search, gaps, stats, analyse)
   model.ts          # LLM factory + model selection (Anthropic / Ollama / OpenAI)
   agent.ts          # LangGraph ReAct agent setup
   prompts.ts        # System prompt
+  banner.ts         # Startup banner
   cli.ts            # Interactive REPL with streaming + model picker
 scripts/
   ingest.ts         # CLI entry point for ingestion
