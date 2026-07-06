@@ -6,9 +6,9 @@
     "anki-tomodachi": "bin/anki-tomodachi"
   },
   "scripts": {
-    "chat": "bash scripts/start-chroma.sh && tsx src/cli.ts",
-    "db": "bash scripts/start-chroma.sh",
-    "ingest": "bash scripts/start-chroma.sh && tsx scripts/ingest.ts",
+    "chat": "bin/anki-tomodachi",
+    "db": "bin/anki-tomodachi db",
+    "ingest": "bin/anki-tomodachi ingest",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

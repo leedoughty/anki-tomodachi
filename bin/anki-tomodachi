@@ -6,18 +6,48 @@ set -euo pipefail
 # Resolve the real repo root, following the npm-link symlink chain.
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 ROOT="$(cd "$(dirname "$SELF")/.." && pwd)"
+TSX="$ROOT/node_modules/.bin/tsx"
+HEARTBEAT="http://localhost:8000/api/v2/heartbeat"
+
+is_up() {
+  [ "$(curl -s -o /dev/null -w '%{http_code}' "$HEARTBEAT")" = "200" ]
+}
+
+# `db` deliberately starts the server and leaves it running.
+if [ "${1:-}" = "db" ]; then
+  "$ROOT/scripts/start-chroma.sh"
+  exit 0
+fi
+
+# Stop the server on exit only if this session started it; one that was
+# already up (via `anki-tomodachi db`, Docker, another session) is left alone.
+STARTED_BY_US=0
+is_up || STARTED_BY_US=1
+
+stop_chroma() {
+  [ "$STARTED_BY_US" = 1 ] || return 0
+  local pid
+  pid="$(cat "$ROOT/chroma.pid" 2>/dev/null)" || return 0
+  # Guard against stale pidfiles: only kill a live chroma process.
+  if ps -p "$pid" -o command= 2>/dev/null | grep -q "chroma run"; then
+    kill "$pid" 2>/dev/null || true
+  fi
+  rm -f "$ROOT/chroma.pid"
+}
+
+trap stop_chroma EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 "$ROOT/scripts/start-chroma.sh"
 
 case "${1:-}" in
   ingest)
     shift
-    exec "$ROOT/node_modules/.bin/tsx" "$ROOT/scripts/ingest.ts" "$@"
-    ;;
-  db)
-    exit 0
+    "$TSX" "$ROOT/scripts/ingest.ts" "$@"
     ;;
   *)
-    exec "$ROOT/node_modules/.bin/tsx" "$ROOT/src/cli.ts" "$@"
+    "$TSX" "$ROOT/src/cli.ts" "$@"
     ;;
 esac

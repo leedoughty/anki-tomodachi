@@ -95,7 +95,7 @@ Then from any directory:
 ```bash
 anki-tomodachi          # start chatting (same as npm run chat)
 anki-tomodachi ingest   # re-sync cards from Anki (same as npm run ingest)
-anki-tomodachi db       # just start ChromaDB (same as npm run db)
+anki-tomodachi db       # start ChromaDB and keep it running (same as npm run db)
 ```
 
 ChromaDB data, logs, and your `.env` are always resolved against the repo, no
@@ -161,15 +161,17 @@ which ensures a local ChromaDB server is up on `localhost:8000`:
   logging to the repo's `chroma.log`, and the script waits until it's ready before
   continuing.
 
-The server **stays running** after you exit chat so the next command reuses it
-instantly. Your data persists to the repo's `chroma_data/` regardless of where you
-invoke it from, and the server binds to `localhost` only. It does not survive a
-reboot — the next `npm run chat` simply starts it again.
+The server's lifetime follows your session: if chat (or ingest) started it, it
+is **stopped automatically when you exit** — no idle RAM use, and the ~1s
+startup is paid on the next launch. A server that was already running (started
+with `anki-tomodachi db`, Docker, or another session) is detected, reused, and
+left running when you exit. Your data persists to the repo's `chroma_data/`
+either way, and the server binds to `localhost` only.
 
 ```bash
-npm run db   # start ChromaDB on its own, without launching chat
+npm run db   # start ChromaDB and leave it running (keep it warm)
 
-pkill -f "chroma run"   # stop it manually if you want the port/RAM back
+pkill -f "chroma run"   # stop a lingering server manually
 ```
 
 ## Architecture

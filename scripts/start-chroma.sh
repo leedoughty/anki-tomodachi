@@ -25,6 +25,7 @@ fi
 
 echo "Starting ChromaDB (logging to $LOG_FILE)..."
 nohup chroma run --path "$DATA_PATH" >"$LOG_FILE" 2>&1 &
+echo $! >"$ROOT/chroma.pid"
 
 # Wait up to ~30s for the server to accept connections.
 for _ in $(seq 1 60); do
