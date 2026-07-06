@@ -112,7 +112,7 @@ async function handleSlashCommand(command: string): Promise<boolean> {
     /stats    Show deck statistics
     /ingest   Re-import cards from Anki
     /help     Show this help
-    /quit     Exit
+    /quit     Exit (alias /exit)
 `);
       return true;
 
