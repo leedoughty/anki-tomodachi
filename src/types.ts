@@ -10,6 +10,7 @@ export const AnkiNoteSchema = z.object({
   modelName: z.string(),
   tags: z.array(z.string()),
   fields: z.record(
+    z.string(),
     z.object({
       value: z.string(),
       order: z.number(),

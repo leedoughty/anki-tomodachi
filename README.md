@@ -134,14 +134,78 @@ the whole assistant runs **offline**.
 > agent's recursion limit. If answers come back without any `→ search_cards(...)`
 > lines, the model likely can't call tools — switch to a qwen-family model.
 
+### 作って — generate cards
+
+Paste an article URL (or Japanese text) and ask for cards. The agent reads the
+source, picks sentences worth learning from, checks each candidate word against
+your deck, drafts cards in your house format, and **waits for your approval
+before writing anything to Anki**.
+
+```
+友達 > https://www3.nhk.or.jp/news/html/... 知らない単語をカードにして
+  → WebFetch({"url":"https://www3.nhk.or.jp/news/html/..."})
+  → check_known({"words":["拙速","拮抗","懸案","踏み込む","相次ぐ"]})
+
+3枚作ったよ。
+
+1. 拙速
+   専門家からは、拙速な決定が現場に混乱をもたらしたという指摘が相次いでいる
+   ・⏩❌ rushing something and botching it
+
+2. 拮抗
+   賛否は拮抗している
+   ・⚖️ evenly matched
+
+3. 懸案
+   長年の懸案に踏み込んだ点を評価する声もある
+   ・ずっと解決されないまま残っている問題
+
+飛ばしたやつ：政府（固有名詞っぽい）、専門家・指摘・評価（もうデッキにある）
+
+これでいい？
+
+友達 > 1と3だけお願い
+  → anki_add_notes({"cards":[...]})
+  → anki_verify_notes({"noteIds":[1785484869662,1785484885534]})
+
+2枚追加しました！
+```
+
+Cards are written to your **Japanese Vocabulary** deck using the **Japanese**
+note type:
+
+| Field        | Content                                                                     |
+| ------------ | --------------------------------------------------------------------------- |
+| `Expression` | The source sentence, target word highlighted amber (the card front)         |
+| `Meaning`    | `単語：` then a `・` line — emoji, a Japanese gloss, or English             |
+| `Reading`    | The whole sentence in furigana notation: ` 拙速[せっそく]な 決定[けってい]` |
+
+The HTML is rendered by the app, not the model, so every card comes out in the
+same format. After writing, the agent reads the notes back out of Anki and
+checks each field — if something doesn't match, it tells you rather than
+claiming success.
+
+You can also start explicitly with `/tsukutte <url or text>`.
+
+**Guardrails**
+
+- Never writes to Anki without an explicit approval turn
+- Never cards a word already in your deck (checked against ChromaDB first)
+- Has no shell and no filesystem access — only its five card tools plus web fetch
+- Caps each run at 5 cards, and tells you what it skipped and why
+- Pre-flight-checks Anki is reachable before doing any drafting work
+
+Run `/ingest` afterwards so the new cards are searchable next session.
+
 ### Slash commands
 
-| Command   | Description               |
-| --------- | ------------------------- |
-| `/stats`  | Show deck card count      |
-| `/ingest` | Re-import cards from Anki |
-| `/help`   | List commands             |
-| `/quit`   | Exit (alias `/exit`)      |
+| Command     | Description                                   |
+| ----------- | --------------------------------------------- |
+| `/stats`    | Show deck card count                          |
+| `/ingest`   | Re-import cards from Anki                     |
+| `/tsukutte` | Make cards from a URL or pasted Japanese text |
+| `/help`     | List commands                                 |
+| `/quit`     | Exit (alias `/exit`)                          |
 
 ### Ingestion
 
@@ -176,43 +240,80 @@ pkill -f "chroma run"   # stop a lingering server manually
 
 ## Architecture
 
+Two engines sit behind one REPL. You never pick between them — the CLI routes
+on intent.
+
 ```mermaid
 flowchart LR
-    CLI[Terminal REPL] --> Agent[LangGraph Agent]
-    Agent --> LLM[LLM: Claude / Ollama / OpenAI]
-    Agent --> search[search_cards]
-    Agent --> gaps[find_gaps]
-    Agent --> stats[card_stats]
-    Agent --> analyse[analyse_text]
+    CLI[Terminal REPL] -->|questions| Chat[LangGraph ReAct Agent]
+    CLI -->|make cards| Make[Claude Agent SDK 作って]
+
+    Chat --> LLM[Claude / Ollama / OpenAI]
+    Chat --> search[search_cards]
+    Chat --> gaps[find_gaps]
+    Chat --> stats[card_stats]
+    Chat --> analyse[analyse_text]
+
+    Make --> Claude[Claude]
+    Make --> web[WebFetch]
+    Make --> known[check_known]
+    Make --> add[anki_add_notes]
+    Make --> verify[anki_verify_notes]
+
     search --> Chroma[(ChromaDB)]
     gaps --> Chroma
     stats --> Chroma
     analyse --> Chroma
+    known --> Chroma
+
+    add --> Anki[(Anki via AnkiConnect)]
+    verify --> Anki
 ```
 
 - **ChromaDB** stores card embeddings with metadata (deck, tags, ease, interval, lapses, card type)
-- **AnkiConnect** pulls cards from your running Anki instance (only needed during ingestion)
-- **LangGraph** orchestrates a ReAct agent that picks the right tool for each question
+- **AnkiConnect** pulls cards during ingestion, and writes new cards during 作って
+- **LangGraph** orchestrates the read-only ReAct agent that answers questions
+- **The Claude Agent SDK** runs the card-generation agent, with the shared tool
+  core exposed as an in-process MCP server
 - **The LLM** (Anthropic Claude, a local Ollama model, or any OpenAI-compatible
-  endpoint) reasons about your cards and generates personalised answers
+  endpoint) answers questions; card generation always runs on Claude
+
+### Why two engines
+
+The chat path is read-only, provider-agnostic, and answers in one turn — a ReAct
+loop over four retrieval tools is exactly the right size for it, and LangGraph
+keeps it working against Ollama and OpenAI as well as Claude.
+
+Card generation is a different shape of problem: it writes to a real deck, so it
+needs a hard tool boundary (no shell, no filesystem), a genuine
+propose→approve→write→verify cycle, and web fetching. The Claude Agent SDK gives
+those directly — `tools: []` to start from zero built-ins, `allowedTools` to
+pre-approve exactly five in-process MCP tools, and session resume so the
+approval is a real conversation turn rather than a bolted-on y/n prompt.
+
+Both engines share the same tool logic via `src/tools-core.ts`, so a deck query
+means the same thing on either path.
 
 ## Tech stack
 
-TypeScript, Node.js (ESM), LangGraph.js, LangChain.js, ChromaDB, Anthropic Claude / Ollama / OpenAI, Zod, Vitest
+TypeScript, Node.js (ESM), LangGraph.js, LangChain.js, Claude Agent SDK, ChromaDB, Anthropic Claude / Ollama / OpenAI, Zod, Vitest
 
 ## Project structure
 
 ```
 src/
-  anki-connect.ts   # Typed AnkiConnect HTTP client
+  anki-connect.ts   # Typed AnkiConnect HTTP client (read)
+  anki-write.ts     # Card rendering, note creation, read-back verification
   types.ts          # Zod schemas for cards, metadata, search results
   vectorstore.ts    # ChromaDB client, search, bulk retrieval
   embeddings.ts     # Local multilingual-e5-small embedding function
   ingest.ts         # Card ingestion pipeline
-  tools.ts          # LangGraph tool definitions (search, gaps, stats, analyse)
+  tools-core.ts     # Shared tool logic used by both agents
+  tools.ts          # LangGraph tool bindings (search, gaps, stats, analyse)
   model.ts          # LLM factory + model selection (Anthropic / Ollama / OpenAI)
-  agent.ts          # LangGraph ReAct agent setup
-  prompts.ts        # System prompt
+  agent.ts          # LangGraph ReAct agent setup (chat)
+  agent-tsukutte.ts # Claude Agent SDK agent + MCP tools (作って card generation)
+  prompts.ts        # System prompts for both agents
   banner.ts         # Startup banner
   cli.ts            # Interactive REPL with streaming + model picker
 scripts/

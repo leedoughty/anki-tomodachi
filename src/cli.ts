@@ -6,6 +6,12 @@ import ora from "ora";
 import { HumanMessage } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { createAgent } from "./agent.js";
+import {
+  hasApiKey,
+  runTsukutte,
+  tsukutteModel,
+  wantsCards,
+} from "./agent-tsukutte.js";
 import { printBanner } from "./banner.js";
 import { getCollectionStats, getDeckStats } from "./vectorstore.js";
 import { ingestCards } from "./ingest.js";
@@ -76,6 +82,71 @@ async function selectModel(): Promise<ModelConfig> {
   }
 }
 
+const DECLINE = /^(いや|やめ|no|nope|cancel|キャンセル|やっぱり)/i;
+
+let cardSession: string | undefined;
+let awaitingConfirmation = false;
+
+async function generateCards(input: string): Promise<void> {
+  if (!hasApiKey()) {
+    console.error(
+      chalk.red("\nCard generation needs an Anthropic API key."),
+      chalk.yellow("\nSet ANTHROPIC_API_KEY in your .env file.\n"),
+    );
+    return;
+  }
+
+  const resume = awaitingConfirmation ? cardSession : undefined;
+  const used = new Set<string>();
+  let wroteText = false;
+  let failed = false;
+
+  try {
+    for await (const event of runTsukutte(input, resume)) {
+      switch (event.type) {
+        case "session":
+          cardSession = event.sessionId;
+          break;
+        case "tool":
+          used.add(event.name ?? "");
+          console.log(
+            chalk.dim(`  → ${event.name}(${JSON.stringify(event.input)})`),
+          );
+          break;
+        case "text":
+          process.stdout.write(event.text ?? "");
+          wroteText = true;
+          break;
+        case "error":
+          failed = true;
+          console.error(chalk.red(`\n${event.text}`));
+          break;
+      }
+    }
+
+    if (wroteText) console.log("\n");
+
+    if (used.has("anki_verify_notes") || failed) {
+      awaitingConfirmation = false;
+      cardSession = undefined;
+      if (!failed) {
+        console.log(
+          chalk.dim(
+            "  新しいカードは `/ingest` するとデッキ検索に反映されます。\n",
+          ),
+        );
+      }
+    } else {
+      awaitingConfirmation = true;
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error(chalk.red(`\n${msg}\n`));
+    awaitingConfirmation = false;
+    cardSession = undefined;
+  }
+}
+
 async function handleSlashCommand(command: string): Promise<boolean> {
   switch (command) {
     case "/quit":
@@ -109,10 +180,14 @@ async function handleSlashCommand(command: string): Promise<boolean> {
     case "/help":
       console.log(`
   ${chalk.bold("Commands:")}
-    /stats    Show deck statistics
-    /ingest   Re-import cards from Anki
-    /help     Show this help
-    /quit     Exit (alias /exit)
+    /stats      Show deck statistics
+    /ingest     Re-import cards from Anki
+    /tsukutte   Make cards from a URL or pasted Japanese text
+    /help       Show this help
+    /quit       Exit (alias /exit)
+
+  ${chalk.bold("作って:")} paste an article URL or Japanese text and ask for cards
+    e.g. ${chalk.dim("https://www3.nhk.or.jp/news/... 知らない単語をカードにして")}
 `);
       return true;
 
@@ -146,6 +221,14 @@ async function main(): Promise<void> {
 
   printBanner({ cardCount, decks, model });
 
+  if (model.provider !== "anthropic") {
+    console.log(
+      chalk.dim(
+        `  Card generation (作って) runs on ${tsukutteModel()} and needs ANTHROPIC_API_KEY.\n`,
+      ),
+    );
+  }
+
   const agent = createAgent({ checkpointSaver: new MemorySaver(), model });
   const config = { configurable: { thread_id: "chat" } };
 
@@ -164,6 +247,22 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (input.startsWith("/tsukutte")) {
+      const rest = input.slice("/tsukutte".length).trim();
+      if (!rest) {
+        console.log(chalk.yellow("Usage: /tsukutte <URL or Japanese text>\n"));
+        showPrompt();
+        return;
+      }
+      rl.pause();
+      awaitingConfirmation = false;
+      cardSession = undefined;
+      await generateCards(rest);
+      rl.resume();
+      showPrompt();
+      return;
+    }
+
     if (input.startsWith("/")) {
       const handled = await handleSlashCommand(input);
       if (!handled) {
@@ -171,6 +270,27 @@ async function main(): Promise<void> {
           chalk.yellow(`Unknown command: ${input}. Type /help for commands.\n`),
         );
       }
+      showPrompt();
+      return;
+    }
+
+    if (awaitingConfirmation && !DECLINE.test(input)) {
+      rl.pause();
+      await generateCards(input);
+      rl.resume();
+      showPrompt();
+      return;
+    }
+
+    if (awaitingConfirmation) {
+      awaitingConfirmation = false;
+      cardSession = undefined;
+    }
+
+    if (wantsCards(input)) {
+      rl.pause();
+      await generateCards(input);
+      rl.resume();
       showPrompt();
       return;
     }
